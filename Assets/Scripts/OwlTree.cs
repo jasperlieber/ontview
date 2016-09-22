@@ -11,7 +11,7 @@ public class TreeElem
     private readonly string mSpotName;  // name of spot in tree
     public string mFullName { set; get; }
     public int nLeaves { set; get; }    // number of references in owl to this node
-    public NodeInstance mNode;          // only set if a leaf - null otherwise
+    public NodeInstance mNode { set; get; }           // only set if a leaf - null otherwise
     public int mDepth;                  // depth of this node in tree
     public int mNumKids { set; get; }   // number of kids of this node
     public Vector3 mPos { set; get; }   // position for the node
@@ -39,16 +39,26 @@ public class TreeElem
         mKidNum = kidCnt;
     }
 
+    private bool m_debug = false;
     public override string ToString()
     {
-        string msg = mSpotName + '\n';
-        for (int jj = 0; jj < mDepth; jj++)
-            msg += '-';
-        msg += " (Depth = " + mDepth + " nLeaves=" + nLeaves
-            + " mKidNum=" + mKidNum + " mNumKids=" + mNumKids
-            + " mPos=" + mPos 
-            + " mRange=" + mRange + " mAlpha=" + mAlpha + ")\n" 
-            + mFullName;
+        string msg = mSpotName;
+
+        if (m_debug)
+        {
+            msg += '\n';
+            for (int jj = 0; jj < mDepth; jj++)
+                msg += '-';
+            msg += " (Depth = " + mDepth
+                + " mRange=" + mRange
+                + " mAlpha=" + mAlpha
+                + " nLeaves=" + nLeaves
+                + " mKidNum=" + mKidNum
+                + " mNumKids=" + mNumKids + ")\n";
+
+        }
+
+        msg += '\n' + mFullName;
 
         return msg;
     }
@@ -130,7 +140,7 @@ public class OwlTree
             bool found = false;
             TreeNode<TreeElem> newPtr = null;
 
-            fullName += pathSegment + " | ";
+            fullName += pathSegment + " ";
 
             foreach (var kid in treePtr.Children)
             {
@@ -149,12 +159,15 @@ public class OwlTree
             {
                 newPtr = treePtr.AddChild(
                     new TreeElem(pathSegment, depth, treePtr.Value.mNumKids++));
-                newPtr.Value.mFullName = fullName;
+                newPtr.Value.mFullName = '<' + fullName + '>';
             }
 
             treePtr = newPtr;
         }
-        //treePtr.Value.mNode = graphNode;
+
+        if (treePtr.Value.mNode != null)
+            Debug.Log("dupe node: " + treePtr.Value);
+        treePtr.Value.mNode = graphNode;
 
         return treePtr.Value;
     }

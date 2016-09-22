@@ -72,7 +72,7 @@
     <Compile Include="Assets\Scripts\GraphManager.cs" />
     <Compile Include="Assets\Scripts\NodeInstance.cs" />
     <Compile Include="Assets\Scripts\NodeManager2.cs" />
-    <Compile Include="Assets\Scripts\OwlGraphStats.cs" />
+    <Compile Include="Assets\Scripts\OwlNodeTree.cs" />
     <Compile Include="Assets\Scripts\OwlTree.cs" />
     <Compile Include="Assets\Scripts\TreeNode.cs" />
   </ItemGroup>

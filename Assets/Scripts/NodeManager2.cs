@@ -47,8 +47,11 @@ public class NodeManager2 : MonoBehaviour
         m_nodeLabel.enabled = false;
 
         m_renderer.material.color =
-            m_statsElem.mNode == null ? Color.magenta :
-                (m_statsElem.mNode.m_owlNode.IsAnonymous() ? Color.blue : Color.cyan);
+            m_statsElem.mNode == null 
+                ? Color.magenta 
+                : (m_statsElem.mNode.m_owlNode.IsAnonymous() 
+                    ? Color.blue 
+                    : Color.cyan);
 
 
         m_startcolor = m_renderer.material.color;

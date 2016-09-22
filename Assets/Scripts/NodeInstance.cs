@@ -2,20 +2,19 @@
 using System.Collections;
 using OwlDotNetApi;
 using Overby.Collections;
+using System;
 
 public class NodeInstance
 {
-    [HideInInspector]
     public OwlNode m_owlNode;
-
-    [HideInInspector]
-    public GameObject m_graphNode;
-
-    [HideInInspector]
-    public ArrayList m_pathSegments;
-
-    [HideInInspector]
+    //public GameObject m_graphNode;
+    public ArrayList m_pathSegments; // should be moved to TreeNode class
     internal TreeElem m_statNode;
+
+    internal void addOwlEdge(GameObject goEdge)
+    {
+        //throw new NotImplementedException();
+    }
 
     /*
       

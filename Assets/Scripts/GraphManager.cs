@@ -32,12 +32,12 @@ public class GraphManager : MonoBehaviour
 
     private IOwlGraph m_OwlGraph;
     private int m_numNodes;
-    private Dictionary<string, NodeInstance> m_NodeGraph;
+    private Dictionary<string, NodeInstance> m_NodeDictionary;
 
     private GameObject m_HeirLineParent;
     private GameObject m_OwlLineParent;
 
-    private OwlGraphStats m_owlGraphStats;
+    private OwlNodeTree m_owlNodeTree;
 
     //private int m_drawCnt;
 
@@ -58,9 +58,9 @@ public class GraphManager : MonoBehaviour
         m_HeirLineParent = GameObject.Find("HeirLineParent");
         m_OwlLineParent = GameObject.Find("OwlLineParent");
 
-        m_NodeGraph = new Dictionary<string, NodeInstance>();
+        m_NodeDictionary = new Dictionary<string, NodeInstance>();
 
-        m_owlGraphStats = new OwlGraphStats();
+        m_owlNodeTree = new OwlNodeTree();
 
         StartCoroutine(GameLoop());
 
@@ -78,13 +78,13 @@ public class GraphManager : MonoBehaviour
         yield return StartCoroutine(ProcessOwl());
         m_winText.text = oldText;
 
-        string msg = m_owlGraphStats.ToString();
+        string msg = m_owlNodeTree.ToString();
         Debug.Log(msg);
 
         //m_drawCnt = 0;
 
         /*yield return StartCoroutine*/
-        DrawStatTree(m_owlGraphStats.m_keyTree.m_tree);
+        DrawStatTree(m_owlNodeTree.m_keyTree.m_tree);
 
         if (m_testing)
             yield break;
@@ -97,7 +97,7 @@ public class GraphManager : MonoBehaviour
     {
         string filename = m_OwlFile;//   Application.dataPath.ToString() 
             //+ "\\..\\Ontologies\\example.owl";
-        Debug.Log(filename);
+        //Debug.Log(filename);
         IOwlParser parser = new OwlXmlParser();
         m_OwlGraph = parser.ParseOwl(filename);
         m_numNodes = m_OwlGraph.Nodes.Count;
@@ -141,10 +141,10 @@ public class GraphManager : MonoBehaviour
                 graphNode.m_pathSegments.Add(element);//.TrimEnd('/'));
             }
 
-            TreeElem statsElem = m_owlGraphStats.addNode(graphNode);
+            TreeElem statsElem = m_owlNodeTree.addNode(graphNode);
             graphNode.m_statNode = statsElem;
-            statsElem.mNode = graphNode;
-            m_NodeGraph.Add(owlKey, graphNode);
+            //statsElem.mNode = graphNode;
+            m_NodeDictionary.Add(owlKey, graphNode);
 
             if (cnt % m_addElementInterval == 0)
             {
@@ -168,66 +168,14 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator ProcessOwl()
     {
-        m_owlGraphStats.UpdateLeafCount();
-        m_owlGraphStats.CalculateNodeRanges(m_owlGraphStats.m_keyTree.m_tree);
-        m_owlGraphStats.CalculateNodeAlphas(m_owlGraphStats.m_keyTree.m_tree);
-        m_owlGraphStats.CalculateDepthCounts();
+        m_owlNodeTree.UpdateLeafCount();
+        m_owlNodeTree.CalculateNodeRanges(m_owlNodeTree.m_keyTree.m_tree);
+        m_owlNodeTree.CalculateDepthRadii();
+        m_owlNodeTree.CalculateNodeAlphas(m_owlNodeTree.m_keyTree.m_tree);
         yield return null;
     }
 
-    private IEnumerator DrawOwlEdges()
-    {
-        int numEdges = m_OwlGraph.Edges.Count;
-
-        m_winText.text += "There are " + numEdges + " edges(s).";
-
-        IEnumerator edgeIter = m_OwlGraph.Edges.GetEnumerator();
-
-        int cnt = 0;
-        int numNull = 0;
-
-        while (edgeIter.MoveNext())
-        {
-            IOwlEdge edge = (IOwlEdge)edgeIter.Current;
-            IOwlNode parent = edge.ParentNode;
-            IOwlNode child  = edge.ChildNode;
-
-            NodeInstance childNode;
-            NodeInstance parentNode;
-
-            m_NodeGraph.TryGetValue(child.ToString(),  out childNode);
-            m_NodeGraph.TryGetValue(parent.ToString(), out parentNode);
-
-            if (childNode == null || parentNode == null)
-            {
-                numNull++;
-                continue;
-            }
-
-            Vector3 childPos = childNode.m_statNode.mPos;
-            Vector3 parentPos = parentNode.m_statNode.mPos;
-
-            DrawLine(childPos, parentPos, m_lineColor, m_OwlLineParent);
-
-            cnt++;
-
-            //Debug.Log("There are " + numNull + " edges with a null node");
-
-            if (cnt % m_addElementInterval == 0)
-            {
-                //Debug.Log("cnt = " + cnt);
-                yield return null;// new WaitForSeconds(m_edgeAddDelaySecs);
-            }
-        }
-
-
-
-        //m_winText.text += "\n" + numNull + " edge(s) have a null node.";
-
-        yield return null;
-    }
-
-    void DrawLine(Vector3 start, Vector3 end, Color color, GameObject parent) // , float duration = 0.2f )
+    GameObject DrawLine(Vector3 start, Vector3 end, Color color, GameObject parent) // , float duration = 0.2f )
     {
         GameObject myLine = new GameObject();
         myLine.transform.SetParent(parent.transform);
@@ -241,6 +189,8 @@ public class GraphManager : MonoBehaviour
         lr.SetWidth(m_lineSize, m_lineSize);
         lr.SetPosition(0, start);
         lr.SetPosition(1, end);
+
+        return myLine;
          
         //GameObject.Destroy(myLine, duration);
 
@@ -307,6 +257,68 @@ public class GraphManager : MonoBehaviour
 
 
         //yield return null;
+    }
+
+
+    private IEnumerator DrawOwlEdges()
+    {
+        int numEdges = m_OwlGraph.Edges.Count;
+
+        m_winText.text += "There are " + numEdges + " edges(s).";
+
+        IEnumerator edgeIter = m_OwlGraph.Edges.GetEnumerator();
+
+        int cnt = 0;
+        int numNull = 0;
+
+        while (edgeIter.MoveNext())
+        {
+            IOwlEdge edge = (IOwlEdge)edgeIter.Current;
+            IOwlNode parent = edge.ParentNode;
+            IOwlNode child = edge.ChildNode;
+
+            NodeInstance childNode;
+            NodeInstance parentNode;
+
+            m_NodeDictionary.TryGetValue(child.ToString(), out childNode);
+            m_NodeDictionary.TryGetValue(parent.ToString(), out parentNode);
+
+            if (childNode == null || parentNode == null)
+            {
+                if (childNode == null)
+                {
+                    Debug.Log("no child node found for edge " + edge.ID);
+                }
+                if (parentNode == null)
+                {
+                    Debug.Log("no parent node found for edge " + edge.ID);
+                }
+                numNull++;
+                continue;
+            }
+
+            Vector3 childPos = childNode.m_statNode.mPos;
+            Vector3 parentPos = parentNode.m_statNode.mPos;
+
+            GameObject goEdge = DrawLine(childPos, parentPos, m_lineColor, m_OwlLineParent);
+
+            childNode.addOwlEdge(goEdge);
+            cnt++;
+
+            //Debug.Log("There are " + numNull + " edges with a null node");
+
+            if (cnt % m_addElementInterval == 0)
+            {
+                //Debug.Log("cnt = " + cnt);
+                yield return null;// new WaitForSeconds(m_edgeAddDelaySecs);
+            }
+        }
+
+
+
+        //m_winText.text += "\n" + numNull + " edge(s) have a null node.";
+
+        yield return null;
     }
 
 
