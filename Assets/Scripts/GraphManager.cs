@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using OwlDotNetApi;
 using System.Collections.Generic;
 using System;
+using Overby.Collections;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,21 +12,35 @@ using UnityEditor;
 
 public class GraphManager : MonoBehaviour
 {
+    public string m_OwlFile;
+    public string m_OwlFile1;
+    public string m_OwlFile2;
+    public string m_OwlFile3;
+    public string m_OwlFile4;
     public GameObject m_NodePrefab;
     public Text m_winText;
     public Text m_titleText;
+    public Toggle m_heirarchyEdgesToggle;
+    public Toggle m_owlEdgesToggle;
     public float m_edgeAddDelaySecs;
     public int m_addElementInterval;
     public float m_lineSize;
     public GUIStyle m_style;
     public Color m_lineColor;
+    public Color m_TaxonomylineColor;
     public bool m_testing;
 
     private IOwlGraph m_OwlGraph;
     private int m_numNodes;
     private Dictionary<string, NodeInstance> m_NodeGraph;
 
+    private GameObject m_HeirLineParent;
+    private GameObject m_OwlLineParent;
+
     private OwlGraphStats m_owlGraphStats;
+
+    //private int m_drawCnt;
+
     //private Camera m_Camera;
 
     private void Awake()
@@ -36,29 +51,40 @@ public class GraphManager : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        m_winText.text = "FTL Owl Visualizer 2016-09-07\n\n";
+        m_winText.text = "FTL Owl Visualizer 2016-09-21\n\n";
         m_titleText.text = "";
+
+
+        m_HeirLineParent = GameObject.Find("HeirLineParent");
+        m_OwlLineParent = GameObject.Find("OwlLineParent");
 
         m_NodeGraph = new Dictionary<string, NodeInstance>();
 
         m_owlGraphStats = new OwlGraphStats();
 
-        //m_Taxonomy = new Dictionary<string,>
-
         StartCoroutine(GameLoop());
+
+        //m_LineParent.SetActive(true);
+
+        //MyQuit();
     }
 
     private IEnumerator GameLoop()
     {
-
         yield return StartCoroutine(OpenOwl());
+
+        string oldText = m_winText.text;
+        m_winText.text = oldText + "Processing OWL...";
         yield return StartCoroutine(ProcessOwl());
+        m_winText.text = oldText;
 
         string msg = m_owlGraphStats.ToString();
         Debug.Log(msg);
 
-        yield return StartCoroutine(DrawOwlNodes());
+        //m_drawCnt = 0;
 
+        /*yield return StartCoroutine*/
+        DrawStatTree(m_owlGraphStats.m_keyTree.m_tree);
 
         if (m_testing)
             yield break;
@@ -69,18 +95,85 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator OpenOwl()
     {
-        string filename = Application.dataPath.ToString() 
-            + "\\..\\Ontologies\\example.owl";
-        //Debug.Log(filename);
+        string filename = m_OwlFile;//   Application.dataPath.ToString() 
+            //+ "\\..\\Ontologies\\example.owl";
+        Debug.Log(filename);
         IOwlParser parser = new OwlXmlParser();
         m_OwlGraph = parser.ParseOwl(filename);
         m_numNodes = m_OwlGraph.Nodes.Count;
         m_winText.text += "There are " + m_numNodes 
-            + " node(s) in this example ontology\n";
+            + " node(s) in the ontology '" + m_OwlFile + "'\n";
 
+        string oldText = m_winText.text;
+
+
+        //yield return null;
+
+        IDictionaryEnumerator nodeIter = (IDictionaryEnumerator)m_OwlGraph.Nodes.GetEnumerator();
+
+        int cnt = 0;
+
+        while (nodeIter.MoveNext())
+        {
+            cnt++;
+
+            string owlKey = (nodeIter.Key).ToString();
+            OwlNode owlNode = (OwlNode)nodeIter.Value;
+
+            NodeInstance graphNode = new NodeInstance();
+
+            graphNode.m_owlNode = owlNode;
+            graphNode.m_pathSegments = new ArrayList();
+
+            //Debug.Log("owlKey  = " + owlKey);
+            //Debug.Log("owlNode = " + owlNode);
+
+            var uri = new Uri(owlKey);
+            //Debug.Log("absURI = " + uri.AbsoluteUri);
+            //Debug.Log("path = " + uri.PathAndQuery);
+            //Debug.Log("host = " + uri.Host);
+
+            // build up the node's path segments
+            graphNode.m_pathSegments.Add(uri.Host);
+            foreach (string element in uri.Segments)
+            {
+                //if (element == "/") continue;
+                graphNode.m_pathSegments.Add(element);//.TrimEnd('/'));
+            }
+
+            TreeElem statsElem = m_owlGraphStats.addNode(graphNode);
+            graphNode.m_statNode = statsElem;
+            statsElem.mNode = graphNode;
+            m_NodeGraph.Add(owlKey, graphNode);
+
+            if (cnt % m_addElementInterval == 0)
+            {
+                string[] dots = { ".", "..", "..." };
+                for (int jj = 0; jj < 3; jj++)
+                    m_winText.text = oldText + "Opening OWL file" + dots[cnt % 3];
+
+                //Debug.Log("cnt = " + cnt);
+                if (m_testing)
+                    yield break;
+                else
+                    yield return null;// new WaitForSeconds(0.052f);
+            }
+
+        }
+
+        m_winText.text = oldText;
         yield return null;
     }
 
+
+    private IEnumerator ProcessOwl()
+    {
+        m_owlGraphStats.UpdateLeafCount();
+        m_owlGraphStats.CalculateNodeRanges(m_owlGraphStats.m_keyTree.m_tree);
+        m_owlGraphStats.CalculateNodeAlphas(m_owlGraphStats.m_keyTree.m_tree);
+        m_owlGraphStats.CalculateDepthCounts();
+        yield return null;
+    }
 
     private IEnumerator DrawOwlEdges()
     {
@@ -111,41 +204,40 @@ public class GraphManager : MonoBehaviour
                 continue;
             }
 
-            //Debug.Log(parent);
-            //Debug.Log(child);
+            Vector3 childPos = childNode.m_statNode.mPos;
+            Vector3 parentPos = parentNode.m_statNode.mPos;
 
-            //Debug.Log(childNode.m_owlNode);
-            //Debug.Log(childNode.m_graphNode.transform.position.ToString());
-
-            Vector3 childPos  = childNode .m_graphNode.transform.position;
-            Vector3 parentPos = parentNode.m_graphNode.transform.position;
-
-            DrawLine(childPos, parentPos, m_lineColor);
+            DrawLine(childPos, parentPos, m_lineColor, m_OwlLineParent);
 
             cnt++;
-
 
             //Debug.Log("There are " + numNull + " edges with a null node");
 
             if (cnt % m_addElementInterval == 0)
             {
                 //Debug.Log("cnt = " + cnt);
-                yield return new WaitForSeconds(m_edgeAddDelaySecs);
+                yield return null;// new WaitForSeconds(m_edgeAddDelaySecs);
             }
-
         }
+
+
+
+        //m_winText.text += "\n" + numNull + " edge(s) have a null node.";
 
         yield return null;
     }
 
-    void DrawLine(Vector3 start, Vector3 end, Color color, float duration = 0.2f)
+    void DrawLine(Vector3 start, Vector3 end, Color color, GameObject parent) // , float duration = 0.2f )
     {
         GameObject myLine = new GameObject();
+        myLine.transform.SetParent(parent.transform);
         myLine.transform.position = start;
-        myLine.AddComponent<LineRenderer>();
-        LineRenderer lr = myLine.GetComponent<LineRenderer>();
+        LineRenderer lr = myLine.AddComponent<LineRenderer>();
+        lr.material = new Material(Shader.Find("Particles/Additive"));
         //lr.material = new Material(Shader.Find("Particles/Alpha Blended Premultiply"));
+        //Debug.Log(color);
         lr.SetColors(color, color);
+        //lr.SetColors(Color.green, color);
         lr.SetWidth(m_lineSize, m_lineSize);
         lr.SetPosition(0, start);
         lr.SetPosition(1, end);
@@ -155,14 +247,13 @@ public class GraphManager : MonoBehaviour
     }
 
 
-
-
-    private static void MyQuit()
+    public static void MyQuit()
     {
-        Debug.Log("stop");
+        //Debug.Log("MyQuit() called.");
 #if UNITY_EDITOR
         //EditorApplication.ExecuteMenuItem("Edit/Play");
         UnityEditor.EditorApplication.isPlaying = false;
+        throw new Exception("force-stop");
 #else
          Application.Quit();
 #endif
@@ -176,164 +267,46 @@ public class GraphManager : MonoBehaviour
             MyQuit();
     }
 
-
-    private IEnumerator DrawOwlNodes()
+    private void DrawStatTree(TreeNode<TreeElem> statNode)
     {
-        //IDictionaryEnumerator nodeIter = (IDictionaryEnumerator)m_NodeGraph.GetEnumerator();
-        float theta = 0;
-        float radius = 20;
 
-        int cnt = 0;  
+        //Debug.Log("visiting " + statNode.Value.ToString());
+        //NodeInstance graphNode = statNode.Value.mNode;
 
-        Vector3 center = new Vector3(0, radius+2, 0);
+        GameObject nodeInstance = Instantiate(m_NodePrefab, statNode.Value.mPos,
+                Quaternion.identity)
+             as GameObject;
 
+        NodeManager2 nm = nodeInstance.GetComponent<NodeManager2>();
+        nm.m_statsElem = statNode.Value;
 
-        foreach (KeyValuePair<string, NodeInstance> kvp in m_NodeGraph)
+        if (statNode.Value.mDepth > 0)
         {
-            NodeInstance graphNode = kvp.Value;
-
-            //string owlKey = (nodeIter.Key).ToString();
-            ////OwlNode owlNode = (OwlNode)m_OwlGraph.Nodes[owlKey];
-            //OwlNode owlNode = (OwlNode)nodeIter.Value;
-
-            ////Debug.Log("owlKey  = " + owlKey);
-            ////Debug.Log("owlNode = " + owlNode);
-            ////yield break;
-            ////Debug.Break(); 
-
-
-            Vector3 pos;
-            pos.x = center.x + radius * Mathf.Sin(theta * Mathf.Deg2Rad);
-            pos.y = center.y + radius * Mathf.Cos(theta * Mathf.Deg2Rad);
-            pos.z = center.z;
-
-            theta += 360f / m_numNodes;
-            cnt++;
-
-            GameObject nodeInstance = Instantiate(m_NodePrefab, pos, Quaternion.identity)
-                as GameObject;
-
-            NodeManager2 nm = nodeInstance.GetComponent<NodeManager2>();
-
-            graphNode.m_graphNode = nodeInstance;
-            nm.m_owlNode = graphNode.m_owlNode; 
-
-            //GameObject go = nodeInstance as GameObject;// nodeInstance.GetComponent<GameObject>();
-
-            nodeInstance.GetComponent<Renderer>().material.color =
-                nm.m_owlNode.IsAnonymous() ? Color.blue : Color.cyan ;
-
-
-
-            //Vector3 pixelPos = Camera.main.WorldToScreenPoint(transform.position);
-            //GUI.Label(new Rect(pixelPos.x + 7, pixelPos.y - 7, 200f, 20f),
-            //    owlKey, m_style);
-
-
-
-            if (cnt % m_addElementInterval == 0)
-            {
-                //Debug.Log("cnt = " + cnt);
-                if (m_testing)
-                    yield break;
-                else
-                    yield return null;// new WaitForSeconds(0.052f);
-            }
+            DrawLine(statNode.Value.mPos, statNode.Parent.Value.mPos, 
+                m_TaxonomylineColor, m_HeirLineParent);
         }
 
-        yield return null;
-    }
+        //m_drawCnt++;
 
+        //if (m_drawCnt % m_addElementInterval == 0)
+        //{
+        //    //Debug.Log("cnt = " + cnt);
+        //    if (m_testing)
+        //        yield break;
+        //    else
+        //        yield return null; // StartCoroutine(DrawStatTree(kid));
+        //}
 
-    private IEnumerator ProcessOwl()
-    {
-        IDictionaryEnumerator nodeIter = (IDictionaryEnumerator)m_OwlGraph.Nodes.GetEnumerator();
-
-        int cnt = 0;
-
-
-
-
-        while (nodeIter.MoveNext())
+        foreach (var kid in statNode.Children)
         {
-            cnt++;
+            DrawStatTree(kid);
 
-            string owlKey = (nodeIter.Key).ToString();
-            OwlNode owlNode = (OwlNode)nodeIter.Value;
-
-            NodeInstance graphNode = new NodeInstance();
-
-            graphNode.m_owlNode = owlNode;
-            graphNode.m_pathSegments = new ArrayList();
-
-            //Debug.Log("owlKey  = " + owlKey);
-            //Debug.Log("owlNode = " + owlNode);
-
-            var uri = new Uri(owlKey);
-            //Debug.Log("absURI = " + uri.AbsoluteUri);
-            //Debug.Log("path = " + uri.PathAndQuery);
-            //Debug.Log("host = " + uri.Host);
-
-            // build up the node's path segments
-            graphNode.m_pathSegments.Add(uri.Host);
-            foreach (string element in uri.Segments)
-            {
-                //if (element == "/") continue;
-                graphNode.m_pathSegments.Add(element.TrimEnd('/'));
-            }
-
-            m_owlGraphStats.addNode(graphNode);
-
-            //string msg = "Segments: ";
-
-            //string depthKey = "";
-            //int depth = 0 ;
-
-            //foreach (string pathSegment in graphNode.m_pathSegments)
-            //{
-            //    //msg += "[" + pathSegment + "]   ";
-
-            //    depthKey += pathSegment + "/";
-
-            //    //m_owlGraphStats.addStat(depth, depthKey);
-
-            //    depth++;
-
-
-            //}
-
-           // Debug.Log(msg);
-
-
-
-
-
-            //Uri uriAddress1 = new Uri(owlKey);
-            //Debug.Log("The parts are {0}, {1}, {2}: " +
-            //    uriAddress1.Segments[0] + ", " + uriAddress1.Segments[1]
-            //     + ", " + uriAddress1.Segments[2]);
-
-            ////string[] directories = owlKey.Split(Path.DirectorySeparatorChar);
-
-            ////string absolutue
-            ////string pathOnly = uri.LocalPath;        // "/mypage.aspx"
-            ////string queryOnly = uri.Query;           // "?myvalue1=hello&myvalue2=goodbye"
-            ////string pathAndQuery = uri.PathAndQuery; // "/mypage.aspx?myvalue1=hello&myvalue2=goodbye"
-            //yield break;
-
-            m_NodeGraph.Add(owlKey, graphNode);
-
-
-
-            if (cnt % m_addElementInterval == 0)
-            {
-                //Debug.Log("cnt = " + cnt);
-                if (m_testing)
-                    yield break;
-                else
-                    yield return null;// new WaitForSeconds(0.052f);
-            }
+            //else
+            //    yield return DrawStatTree(kid);
         }
+
+
+        //yield return null;
     }
 
 

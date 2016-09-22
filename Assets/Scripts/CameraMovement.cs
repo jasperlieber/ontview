@@ -18,25 +18,31 @@ public class CameraMovement : MonoBehaviour {
 	float rotationY = 0.0f;
 	float rotationX = 0.0f;
 
-	void Update () {
+	void Update ()
+    {
 
 		float scroll = Input.GetAxis("Mouse ScrollWheel");
 		transform.Translate(0, 0 * scroll * zoomSpeed, scroll * zoomSpeed, Space.World);
 
-		if (Input.GetKey(KeyCode.RightArrow)){
+		if (Input.GetKey(KeyCode.RightArrow))
+        {
 			transform.position += Vector3.right * speed * Time.deltaTime;
 		}
-		if (Input.GetKey(KeyCode.LeftArrow)){
+		if (Input.GetKey(KeyCode.LeftArrow))
+        {
 			transform.position += Vector3.left * speed * Time.deltaTime;
 		}
-		if (Input.GetKey(KeyCode.UpArrow)){
+		if (Input.GetKey(KeyCode.UpArrow))
+        {
 			transform.position += Vector3.up * speed * Time.deltaTime;
 		}
-		if (Input.GetKey(KeyCode.DownArrow)){
+		if (Input.GetKey(KeyCode.DownArrow))
+        {
 			transform.position += Vector3.down * speed * Time.deltaTime;
 		}
 
-		if (Input.GetMouseButton (0)) {
+		if (Input.GetMouseButton (0))
+        {
 			rotationX += Input.GetAxis ("Mouse X") * sensX * Time.deltaTime;
 			rotationY += Input.GetAxis ("Mouse Y") * sensY * Time.deltaTime;
 			rotationY = Mathf.Clamp (rotationY, minY, maxY);

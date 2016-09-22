@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using OwlDotNetApi;
+using Overby.Collections;
 
 public class NodeInstance
 {
@@ -12,6 +13,9 @@ public class NodeInstance
 
     [HideInInspector]
     public ArrayList m_pathSegments;
+
+    [HideInInspector]
+    internal TreeElem m_statNode;
 
     /*
       

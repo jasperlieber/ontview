@@ -20,11 +20,16 @@ public class NodeManager2 : MonoBehaviour
     [HideInInspector]
     public GameObject m_graphNode;
 
+    [HideInInspector]
+    public TreeElem m_statsElem;
+
     // Use this for initialization
     void Start()
     {
+
         //Debug.Log(m_yLabelOffset);
-        //Debug.Log("m_owlNode.ToString() = " + m_owlNode.ToString());
+        
+        //Debug.Log("m_statsElem.ToString() = " + m_statsElem.ToString());
 
         //m_nodeLabelGO = Instantiate(m_NodeLabelPrefab, 
         //        Vector3.zero,
@@ -33,16 +38,25 @@ public class NodeManager2 : MonoBehaviour
 
 
         m_nodeLabel = GetComponentInChildren<Text>();
-        m_nodeLabel.text = m_owlNode.ToString();
+        m_nodeLabel.text = m_statsElem.ToString(); //"test";// m_owlNode.ToString();
 
         transform.SetParent(GameObject.Find("Canvas").transform);
 
-        //Debug.Log("tt text = " + m_nodeLabel.text);
-
         m_renderer = GetComponent<Renderer>();
-        m_startcolor = m_renderer.material.color;
 
         m_nodeLabel.enabled = false;
+
+        m_renderer.material.color =
+            m_statsElem.mNode == null ? Color.magenta :
+                (m_statsElem.mNode.m_owlNode.IsAnonymous() ? Color.blue : Color.cyan);
+
+
+        m_startcolor = m_renderer.material.color;
+
+
+
+        //Debug.Log("tt text = " + m_nodeLabel.text + ", startColor = " + 
+        //    m_startcolor + ", pos = " + m_renderer.bounds.center.ToString());
     }
 
     // Update is called once per frame

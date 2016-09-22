@@ -1,31 +1,22 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
+//using System.Diagnostics;
 using UnityEngine;
 using Overby.Collections;
 
 public class OwlGraphStats
 {
-    
-
-    // ordered list of depth keys.  index is depth to a dictionary 
-    // containing depth keys & count at that depth.
-    //private List<Dictionary<string,int>> m_graphDepths;
-
-    private OwlTree m_keyTree;
-
+    public OwlTree m_keyTree;
 
     public OwlGraphStats()
     {
-        //m_graphDepths = new List<Dictionary<string, int>>();
         m_keyTree = new OwlTree();
-        m_keyTree.m_tree.Value.mNumRefs = 0;
     }
 
-    internal void addNode(NodeInstance graphNode)
+    internal TreeElem addNode(NodeInstance graphNode)
     {
-        m_keyTree.AddNode(graphNode);
+        return m_keyTree.AddNode(graphNode);
     }
 
     public override string ToString()
@@ -33,46 +24,86 @@ public class OwlGraphStats
         return m_keyTree.ToString();
     }
 
+    internal void UpdateLeafCount()
+    {
+        m_keyTree.UpdateLeafCount(m_keyTree.m_tree);
+    }
 
-    //public void addStat(int depth, string depthKey)
-    //{
-    //    //UnityEngine.Debug.Log("addStat(" + depth + ", " + depthKey + ")");
-    //    if (m_graphDepths.Count < depth+1)
-    //    {
-    //        // need a new depth dictionary item at this depth, with count of one
-    //        Dictionary<string, int> depthKeyNote = new Dictionary<string, int>();
-    //        depthKeyNote.Add(depthKey, 1);
-    //        m_graphDepths.Add(depthKeyNote);
-    //    }
-    //    else
-    //    {
-    //        if (!m_graphDepths[depth].ContainsKey(depthKey))
-    //        {
-    //            m_graphDepths[depth].Add(depthKey, 1);
-    //        }
-    //        else
-    //        {
-    //            m_graphDepths[depth][depthKey]++;
-    //        }
-    //    }
-    //    //UnityEngine.Debug.Log(toString());
-    //}
+    internal void CalculateNodeRanges(TreeNode<TreeElem> treePtr)
+    {
+        treePtr.Value.mRange = treePtr.Value.mDepth == 0 ? 1 
+            : (float)treePtr.Value.nLeaves / treePtr.Parent.Value.nLeaves 
+                * treePtr.Parent.Value.mRange;
 
-    //public string toString()
-    //{
-    //    string msg = "Depth values:\n";
-    //    for(int depth = 0; depth < m_graphDepths.Count; depth++)
-    //    {
-    //        msg += "Depth " + depth + " has " + m_graphDepths[depth].Count 
-    //            + " elements:\n";
+        foreach (var child in treePtr.Children)
+        {
+            CalculateNodeRanges(child);
+        }
+    }
 
-    //        foreach (KeyValuePair<string, int> kvp in m_graphDepths[depth])
-    //        {
-    //            msg += "  " + kvp.Key + " count is " + kvp.Value + "\n";
-    //        }
+    internal void CalculateNodeAlphas(TreeNode<TreeElem> treePtr)
+    {
+        float mRadialIncrement = 5;
 
-    //    }
+        float alpha = treePtr.Value.mDepth == 0 ? 0
+            : treePtr.Value.mAlpha;
 
-    //    return msg;
-    //}
+        foreach (var child in treePtr.Children)
+        {
+            //int numAtThisDepth = mDepthCounts[child.Value.mDepth];
+            //float radius = numAtThisDepth * 1.1f / 2 / (float)Math.PI;// (float)child.Value.mDepth * mRadialIncrement;
+
+            float radius = (float)child.Value.mDepth * mRadialIncrement;
+            child.Value.mAlpha = alpha;
+            alpha += child.Value.mRange;
+
+            float mid = child.Value.mRange * .5f;
+
+            float theta = (alpha-mid) * 2 * (float)Math.PI;
+            child.Value.mPos = new Vector3(
+                (float)Math.Cos(theta) * radius,
+                (float)Math.Sin(theta) * radius);
+
+            CalculateNodeAlphas(child);
+        }
+    }
+
+    public List<int> mDepthCounts;
+    public List<float> mDepthMinAlphas;
+
+    internal void CalculateDepthCounts()
+    {
+        mDepthCounts = new List<int>();
+        mDepthMinAlphas = new List<float>();
+        mDepthCounts.Add(1);
+        mDepthMinAlphas.Add(1f);
+        CalculateDepthCounts(1, m_keyTree.m_tree);
+
+        string vals = null;
+        foreach(int ii in mDepthMinAlphas)
+            vals += ii + " ";
+        Debug.Log(vals);// String.Join(" ", mDepthCounts));
+
+    }
+
+    private void CalculateDepthCounts(int curDepth, TreeNode<TreeElem> treeNode)
+    {
+        int kidCnt = treeNode.Children.Count;
+        if (kidCnt == 0) return;
+
+        if (mDepthCounts.Count <= curDepth)
+        {
+            mDepthCounts.Add(kidCnt);
+            mDepthMinAlphas.Add(1f);
+        }
+        else mDepthCounts[curDepth] += kidCnt;
+
+        foreach (var kid in treeNode.Children)
+        {
+            Debug.Log(kid);
+            CalculateDepthCounts(curDepth + 1, kid);
+            if (kid.Value.mAlpha < mDepthMinAlphas[curDepth])
+                mDepthMinAlphas[curDepth] = kid.Value.mAlpha;
+        }
+    }
 }

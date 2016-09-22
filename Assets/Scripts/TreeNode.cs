@@ -69,6 +69,5 @@ namespace Overby.Collections
             }
             return msg;
         }
-
     }
 }

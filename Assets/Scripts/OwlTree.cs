@@ -9,33 +9,46 @@ using UnityEngine;
 public class TreeElem
 {
     private readonly string mSpotName;  // name of spot in tree
-    public int mNumRefs;                // number of references in owl to this node
+    public string mFullName { set; get; }
+    public int nLeaves { set; get; }    // number of references in owl to this node
     public NodeInstance mNode;          // only set if a leaf - null otherwise
     public int mDepth;                  // depth of this node in tree
-    public int mNumKids;                // number of kids of this node
+    public int mNumKids { set; get; }   // number of kids of this node
+    public Vector3 mPos { set; get; }   // position for the node
+    public float mAlpha { set; get; }   // radial start for this node
+    public float mRange { set; get; }   // radial range for this node
+    public int mKidNum;                 // child number of this node
 
     public TreeElem()
     {
         mSpotName = null;
-        mNumRefs = 1;
+        nLeaves = 0;
         mNode = null;
         mDepth = 0;
         mNumKids = 0;
-
+        mPos = new Vector3();
+        mKidNum = 0;
+        mRange = 0;
+        mAlpha = 0;
     }
 
-    public TreeElem(string spotName, int depth) : this()
+    public TreeElem(string spotName, int depth, int kidCnt) : this()
     {
         mSpotName = spotName;
         mDepth = depth;
+        mKidNum = kidCnt;
     }
 
     public override string ToString()
     {
-        string msg = "";
+        string msg = mSpotName + '\n';
         for (int jj = 0; jj < mDepth; jj++)
             msg += '-';
-        msg += " '" + mSpotName + "' (" + mNumRefs + ", " + mNumKids + ")";
+        msg += " (Depth = " + mDepth + " nLeaves=" + nLeaves
+            + " mKidNum=" + mKidNum + " mNumKids=" + mNumKids
+            + " mPos=" + mPos 
+            + " mRange=" + mRange + " mAlpha=" + mAlpha + ")\n" 
+            + mFullName;
 
         return msg;
     }
@@ -84,6 +97,7 @@ public class TreeElem
     {
         return (mSpotName == pathSegment);
     }
+
 }
 
 public class OwlTree 
@@ -92,7 +106,7 @@ public class OwlTree
 
     public OwlTree()
     {
-        m_tree = new TreeNode<TreeElem>(new TreeElem("root",0));
+        m_tree = new TreeNode<TreeElem>(new TreeElem("root", 0, 0));
     }
 
 
@@ -102,14 +116,13 @@ public class OwlTree
     }
 
 
-    internal void AddNode(NodeInstance graphNode)
+    internal TreeElem AddNode(NodeInstance graphNode)
     {
         TreeNode<TreeElem> treePtr = m_tree;
-        Debug.Log("Adding " + graphNode.m_owlNode.ID);
-
+        
         int depth = 0;
 
-        m_tree.Value.mNumRefs++;
+        string fullName = "";
 
         foreach (string pathSegment in graphNode.m_pathSegments)
         {
@@ -117,9 +130,9 @@ public class OwlTree
             bool found = false;
             TreeNode<TreeElem> newPtr = null;
 
-            ReadOnlyCollection<TreeNode<TreeElem>> kids = treePtr.Children;
+            fullName += pathSegment + " | ";
 
-            foreach (TreeNode<TreeElem> kid in kids)
+            foreach (var kid in treePtr.Children)
             {
                 TreeElem kidElem = kid.Value;
 
@@ -127,23 +140,44 @@ public class OwlTree
 
                 if (found)
                 {
-                    Debug.Log("found " + pathSegment);
-                    kidElem.mNumRefs++;
                     newPtr = kid;
-                    break;
+                    break ;
                 }
             }
 
             if (!found)
             {
-                newPtr = treePtr.AddChild(new TreeElem(pathSegment,depth));
-                Debug.Log("adding '" + pathSegment + "'");
-                treePtr.Value.mNumKids++;
+                newPtr = treePtr.AddChild(
+                    new TreeElem(pathSegment, depth, treePtr.Value.mNumKids++));
+                newPtr.Value.mFullName = fullName;
             }
 
             treePtr = newPtr;
         }
-        treePtr.Value.mNode = graphNode;
-        //Debug.Log("done");
+        //treePtr.Value.mNode = graphNode;
+
+        return treePtr.Value;
     }
+
+
+    internal void UpdateLeafCount(TreeNode<TreeElem> treeNode)
+    {
+        if (treeNode.Children.Count == 0)
+        {
+            treeNode.Value.nLeaves = 1;
+        }
+        else
+        {
+            int cnt = 0;
+
+            foreach (var kid in treeNode.Children)
+            {
+                UpdateLeafCount(kid);
+                cnt += kid.Value.nLeaves;
+            }
+
+            treeNode.Value.nLeaves = cnt;
+        }
+    }
+
 }
