@@ -14,7 +14,7 @@ public class OwlNodeTree
         m_keyTree = new OwlTree();
     }
 
-    internal TreeElem addNode(NodeInstance graphNode)
+    internal OwlTreeNode addNode(NodeInstance graphNode)
     {
         return m_keyTree.AddNode(graphNode);
     }
@@ -29,7 +29,7 @@ public class OwlNodeTree
         m_keyTree.UpdateLeafCount(m_keyTree.m_tree);
     }
 
-    internal void CalculateNodeRanges(TreeNode<TreeElem> treePtr)
+    internal void CalculateNodeRanges(TreeNode<OwlTreeNode> treePtr)
     {
         treePtr.Value.mRange = treePtr.Value.mDepth == 0 ? 1 
             : (float)treePtr.Value.nLeaves / treePtr.Parent.Value.nLeaves 
@@ -41,7 +41,7 @@ public class OwlNodeTree
         }
     }
 
-    internal void CalculateNodeAlphas(TreeNode<TreeElem> treePtr)
+    internal void CalculateNodeAlphas(TreeNode<OwlTreeNode> treePtr)
     {
         //float mRadialIncrement = 5;
 
@@ -122,7 +122,7 @@ public class OwlNodeTree
 
     }
 
-    private void GetMinRangesOfKids(int curDepth, TreeNode<TreeElem> treeNode)
+    private void GetMinRangesOfKids(int curDepth, TreeNode<OwlTreeNode> treeNode)
     {
         if (mDepthMinRange.Count <= curDepth)
             mDepthMinRange.Add(treeNode.Value.mRange);

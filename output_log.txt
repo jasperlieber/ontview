@@ -1,2 +1,0 @@
-There should be 'FtlOwlVis_0.3_Data'
-folder next to the executable

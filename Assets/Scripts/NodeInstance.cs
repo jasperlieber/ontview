@@ -3,33 +3,25 @@ using System.Collections;
 using OwlDotNetApi;
 using Overby.Collections;
 using System;
+using System.Collections.Generic;
 
 public class NodeInstance
 {
     public OwlNode m_owlNode;
     //public GameObject m_graphNode;
     public ArrayList m_pathSegments; // should be moved to TreeNode class
-    internal TreeElem m_statNode;
+    internal OwlTreeNode m_treeNode;
 
-    internal void addOwlEdge(GameObject goEdge)
+    public List<EdgeInstance> m_childEdges = new List<EdgeInstance>();
+    public List<EdgeInstance> m_parentEdges = new List<EdgeInstance>();
+
+    public void addParentEdge(EdgeInstance edgeInstance)
     {
-        //throw new NotImplementedException();
+        m_parentEdges.Add(edgeInstance);
     }
 
-    /*
-      
-    want to put something liket this onto the graph node
-    
-     void OnMouseEnter()
- {
-     startcolor = renderer.material.color;
-     renderer.material.color = Color.yellow;
- }
- void OnMouseExit()
- {
-     renderer.material.color = startcolor;
- }     
-
-    */
-
+    public void addChildEdge(EdgeInstance edgeInstance)
+    {
+        m_childEdges.Add(edgeInstance);
+    }
 }

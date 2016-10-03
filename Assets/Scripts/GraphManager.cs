@@ -12,11 +12,13 @@ using UnityEditor;
 
 public class GraphManager : MonoBehaviour
 {
+    public static bool m_debug = false;
     public string m_OwlFile;
     public string m_OwlFile1;
     public string m_OwlFile2;
     public string m_OwlFile3;
     public string m_OwlFile4;
+    public string m_OwlFile5;
     public GameObject m_NodePrefab;
     public Text m_winText;
     public Text m_titleText;
@@ -24,20 +26,18 @@ public class GraphManager : MonoBehaviour
     public Toggle m_owlEdgesToggle;
     public float m_edgeAddDelaySecs;
     public int m_addElementInterval;
-    public float m_lineSize;
-    public GUIStyle m_style;
-    public Color m_lineColor;
-    public Color m_TaxonomylineColor;
     public bool m_testing;
 
     private IOwlGraph m_OwlGraph;
     private int m_numNodes;
-    private Dictionary<string, NodeInstance> m_NodeDictionary;
 
-    private GameObject m_HeirLineParent;
-    private GameObject m_OwlLineParent;
+    [HideInInspector]
+    public Dictionary<string, NodeInstance> m_NodeDictionary;
+
 
     private OwlNodeTree m_owlNodeTree;
+
+    public EdgeManager m_EdgeManager;
 
     //private int m_drawCnt;
 
@@ -51,26 +51,20 @@ public class GraphManager : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        m_winText.text = "FTL Owl Visualizer 2016-09-21\n\n";
+        m_winText.text = "FTL Owl Visualizer 2016-09-26\n\n";
         m_titleText.text = "";
 
+        StartCoroutine(GameLoop());
+    }
 
-        m_HeirLineParent = GameObject.Find("HeirLineParent");
-        m_OwlLineParent = GameObject.Find("OwlLineParent");
+    private IEnumerator GameLoop()
+    {
+        //m_EdgeManager = GameObject.Find("EdgeManager");
 
         m_NodeDictionary = new Dictionary<string, NodeInstance>();
 
         m_owlNodeTree = new OwlNodeTree();
 
-        StartCoroutine(GameLoop());
-
-        //m_LineParent.SetActive(true);
-
-        //MyQuit();
-    }
-
-    private IEnumerator GameLoop()
-    {
         yield return StartCoroutine(OpenOwl());
 
         string oldText = m_winText.text;
@@ -78,13 +72,13 @@ public class GraphManager : MonoBehaviour
         yield return StartCoroutine(ProcessOwl());
         m_winText.text = oldText;
 
-        string msg = m_owlNodeTree.ToString();
-        Debug.Log(msg);
+        //string msg = m_owlNodeTree.ToString();
+        //Debug.Log(msg);
 
         //m_drawCnt = 0;
 
         /*yield return StartCoroutine*/
-        DrawStatTree(m_owlNodeTree.m_keyTree.m_tree);
+        DrawOwlTree(m_owlNodeTree.m_keyTree.m_tree);
 
         if (m_testing)
             yield break;
@@ -117,7 +111,8 @@ public class GraphManager : MonoBehaviour
         {
             cnt++;
 
-            string owlKey = (nodeIter.Key).ToString();
+            //string owlKey = (nodeIter.Key).ToString();
+            string owlKey = ((OwlNode)nodeIter.Value).ID;
             OwlNode owlNode = (OwlNode)nodeIter.Value;
 
             NodeInstance graphNode = new NodeInstance();
@@ -125,7 +120,7 @@ public class GraphManager : MonoBehaviour
             graphNode.m_owlNode = owlNode;
             graphNode.m_pathSegments = new ArrayList();
 
-            //Debug.Log("owlKey  = " + owlKey);
+            //Debug.Log("owlKey  = <" + owlKey + ">");
             //Debug.Log("owlNode = " + owlNode);
 
             var uri = new Uri(owlKey);
@@ -141,8 +136,11 @@ public class GraphManager : MonoBehaviour
                 graphNode.m_pathSegments.Add(element);//.TrimEnd('/'));
             }
 
-            TreeElem statsElem = m_owlNodeTree.addNode(graphNode);
-            graphNode.m_statNode = statsElem;
+            if (uri.Fragment != null)
+                graphNode.m_pathSegments[graphNode.m_pathSegments.Count -1] += (uri.Fragment);
+
+            OwlTreeNode owlTreeNode = m_owlNodeTree.addNode(graphNode);
+            graphNode.m_treeNode = owlTreeNode;
             //statsElem.mNode = graphNode;
             m_NodeDictionary.Add(owlKey, graphNode);
 
@@ -168,6 +166,8 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator ProcessOwl()
     {
+        m_EdgeManager.setNodeDictionary(m_NodeDictionary);
+
         m_owlNodeTree.UpdateLeafCount();
         m_owlNodeTree.CalculateNodeRanges(m_owlNodeTree.m_keyTree.m_tree);
         m_owlNodeTree.CalculateDepthRadii();
@@ -175,35 +175,13 @@ public class GraphManager : MonoBehaviour
         yield return null;
     }
 
-    GameObject DrawLine(Vector3 start, Vector3 end, Color color, GameObject parent) // , float duration = 0.2f )
-    {
-        GameObject myLine = new GameObject();
-        myLine.transform.SetParent(parent.transform);
-        myLine.transform.position = start;
-        LineRenderer lr = myLine.AddComponent<LineRenderer>();
-        lr.material = new Material(Shader.Find("Particles/Additive"));
-        //lr.material = new Material(Shader.Find("Particles/Alpha Blended Premultiply"));
-        //Debug.Log(color);
-        lr.SetColors(color, color);
-        //lr.SetColors(Color.green, color);
-        lr.SetWidth(m_lineSize, m_lineSize);
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-
-        return myLine;
-         
-        //GameObject.Destroy(myLine, duration);
-
-    }
-
-
     public static void MyQuit()
     {
         //Debug.Log("MyQuit() called.");
 #if UNITY_EDITOR
         //EditorApplication.ExecuteMenuItem("Edit/Play");
         UnityEditor.EditorApplication.isPlaying = false;
-        throw new Exception("force-stop");
+        //throw new Exception("force-stop");
 #else
          Application.Quit();
 #endif
@@ -217,23 +195,23 @@ public class GraphManager : MonoBehaviour
             MyQuit();
     }
 
-    private void DrawStatTree(TreeNode<TreeElem> statNode)
+    private void DrawOwlTree(TreeNode<OwlTreeNode> statNode)
     {
 
         //Debug.Log("visiting " + statNode.Value.ToString());
         //NodeInstance graphNode = statNode.Value.mNode;
 
-        GameObject nodeInstance = Instantiate(m_NodePrefab, statNode.Value.mPos,
+        GameObject nodeManInstance = Instantiate(m_NodePrefab, statNode.Value.mPos,
                 Quaternion.identity)
              as GameObject;
 
-        NodeManager2 nm = nodeInstance.GetComponent<NodeManager2>();
+        NodeManager nm = nodeManInstance.GetComponent<NodeManager>();
+        nm.m_edgeManager = m_EdgeManager;
         nm.m_statsElem = statNode.Value;
 
         if (statNode.Value.mDepth > 0)
         {
-            DrawLine(statNode.Value.mPos, statNode.Parent.Value.mPos, 
-                m_TaxonomylineColor, m_HeirLineParent);
+            m_EdgeManager.DrawTaxonomyLine(statNode.Value.mPos, statNode.Parent.Value.mPos);
         }
 
         //m_drawCnt++;
@@ -249,7 +227,7 @@ public class GraphManager : MonoBehaviour
 
         foreach (var kid in statNode.Children)
         {
-            DrawStatTree(kid);
+            DrawOwlTree(kid);
 
             //else
             //    yield return DrawStatTree(kid);
@@ -262,6 +240,8 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator DrawOwlEdges()
     {
+        //yield return null;
+
         int numEdges = m_OwlGraph.Edges.Count;
 
         m_winText.text += "There are " + numEdges + " edges(s).";
@@ -274,40 +254,13 @@ public class GraphManager : MonoBehaviour
         while (edgeIter.MoveNext())
         {
             IOwlEdge edge = (IOwlEdge)edgeIter.Current;
-            IOwlNode parent = edge.ParentNode;
-            IOwlNode child = edge.ChildNode;
 
-            NodeInstance childNode;
-            NodeInstance parentNode;
+            m_EdgeManager.addOwlEdge(edge, cnt, ref numNull);
 
-            m_NodeDictionary.TryGetValue(child.ToString(), out childNode);
-            m_NodeDictionary.TryGetValue(parent.ToString(), out parentNode);
+            //EdgeInstance edgeInstance = new EdgeInstance(edge);
 
-            if (childNode == null || parentNode == null)
-            {
-                if (childNode == null)
-                {
-                    Debug.Log("no child node found for edge " + edge.ID);
-                }
-                if (parentNode == null)
-                {
-                    Debug.Log("no parent node found for edge " + edge.ID);
-                }
-                numNull++;
-                continue;
-            }
 
-            Vector3 childPos = childNode.m_statNode.mPos;
-            Vector3 parentPos = parentNode.m_statNode.mPos;
-
-            GameObject goEdge = DrawLine(childPos, parentPos, m_lineColor, m_OwlLineParent);
-
-            childNode.addOwlEdge(goEdge);
-            cnt++;
-
-            //Debug.Log("There are " + numNull + " edges with a null node");
-
-            if (cnt % m_addElementInterval == 0)
+            if (cnt++ % m_addElementInterval == 0)
             {
                 //Debug.Log("cnt = " + cnt);
                 yield return null;// new WaitForSeconds(m_edgeAddDelaySecs);
