@@ -13,6 +13,7 @@ using UnityEditor;
 public class GraphManager : MonoBehaviour
 {
     public static bool m_debug = false;
+
     public string m_OwlFile;
     public string m_OwlFile1;
     public string m_OwlFile2;
@@ -20,6 +21,7 @@ public class GraphManager : MonoBehaviour
     public string m_OwlFile4;
     public string m_OwlFile5;
     public GameObject m_NodePrefab;
+    public EdgeManager m_EdgeManager;
     public Text m_winText;
     public Text m_titleText;
     public Toggle m_heirarchyEdgesToggle;
@@ -35,9 +37,8 @@ public class GraphManager : MonoBehaviour
     public Dictionary<string, NodeInstance> m_NodeDictionary;
 
 
+    private Transform m_heirTransform;
     private OwlNodeTree m_owlNodeTree;
-
-    public EdgeManager m_EdgeManager;
 
     //private int m_drawCnt;
 
@@ -51,8 +52,10 @@ public class GraphManager : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        m_winText.text = "FTL Owl Visualizer 2016-09-26\n\n";
+        m_winText.text = "FTL Owl Visualizer 2016-Oct-04\n\n";
         m_titleText.text = "";
+
+        m_heirTransform = GameObject.Find("HeirLineParent").transform;
 
         StartCoroutine(GameLoop());
     }
@@ -195,23 +198,24 @@ public class GraphManager : MonoBehaviour
             MyQuit();
     }
 
-    private void DrawOwlTree(TreeNode<OwlTreeNode> statNode)
+    private void DrawOwlTree(TreeNode<OwlTreeNode> treeNode)
     {
 
         //Debug.Log("visiting " + statNode.Value.ToString());
         //NodeInstance graphNode = statNode.Value.mNode;
 
-        GameObject nodeManInstance = Instantiate(m_NodePrefab, statNode.Value.mPos,
-                Quaternion.identity)
+        GameObject nodePrefab = Instantiate(m_NodePrefab, treeNode.Value.mPos,
+                Quaternion.identity,
+                treeNode.Children.Count > 0 ? m_heirTransform : transform) 
              as GameObject;
 
-        NodeManager nm = nodeManInstance.GetComponent<NodeManager>();
+        NodeManager nm = nodePrefab.GetComponent<NodeManager>();
         nm.m_edgeManager = m_EdgeManager;
-        nm.m_statsElem = statNode.Value;
+        nm.m_treeNode = treeNode.Value;
 
-        if (statNode.Value.mDepth > 0)
+        if (treeNode.Value.mDepth > 0)
         {
-            m_EdgeManager.DrawTaxonomyLine(statNode.Value.mPos, statNode.Parent.Value.mPos);
+            m_EdgeManager.DrawTaxonomyLine(treeNode.Value.mPos, treeNode.Parent.Value.mPos);
         }
 
         //m_drawCnt++;
@@ -225,7 +229,7 @@ public class GraphManager : MonoBehaviour
         //        yield return null; // StartCoroutine(DrawStatTree(kid));
         //}
 
-        foreach (var kid in statNode.Children)
+        foreach (var kid in treeNode.Children)
         {
             DrawOwlTree(kid);
 

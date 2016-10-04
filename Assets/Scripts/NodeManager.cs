@@ -14,14 +14,14 @@ public class NodeManager : MonoBehaviour
     private Text m_nodeLabel;
     private Renderer m_renderer;
     private bool m_showLabel = false;
-    private bool m_highlighted = false; 
+    //private bool m_highlighted = false; 
      //private GameObject m_nodeLabelGO;
 
      [HideInInspector]
     public OwlNode m_owlNode;
 
     [HideInInspector]
-    public OwlTreeNode m_statsElem;
+    public OwlTreeNode m_treeNode;
 
     [HideInInspector]
     public EdgeManager m_edgeManager;
@@ -41,18 +41,18 @@ public class NodeManager : MonoBehaviour
 
 
         m_nodeLabel = GetComponentInChildren<Text>();
-        m_nodeLabel.text = m_statsElem.ToString(); //"test";// m_owlNode.ToString();
+        m_nodeLabel.text = m_treeNode.ToString(); //"test";// m_owlNode.ToString();
 
-        transform.SetParent(GameObject.Find("Canvas").transform);
+        m_nodeLabel.transform.SetParent(GameObject.Find("Canvas").transform);
 
         m_renderer = GetComponent<Renderer>();
 
         m_nodeLabel.enabled = false;
 
         m_renderer.material.color =
-            m_statsElem.mNodeInstance == null 
+            m_treeNode.mNodeInstance == null 
                 ? Color.magenta 
-                : (m_statsElem.mNodeInstance.m_owlNode.IsAnonymous() 
+                : (m_treeNode.mNodeInstance.m_owlNode.IsAnonymous() 
                     ? Color.blue 
                     : Color.cyan);
 
@@ -71,11 +71,12 @@ public class NodeManager : MonoBehaviour
 
         if (m_showLabel && Input.GetMouseButtonDown(0))
         {
-            m_highlighted = !m_highlighted;
+            m_treeNode.mClicked = !m_treeNode.mClicked;
+            //m_highlighted = !m_highlighted;
 
-            brightenEdges(m_highlighted);
+            highlightNodeAndEdges();
 
-            Debug.Log("Pressed left click and showLabel = " + m_showLabel);
+            //Debug.Log("Pressed left click and showLabel = " + m_showLabel);
         }
     }
 
@@ -122,22 +123,26 @@ public class NodeManager : MonoBehaviour
         }
     }
 
-    private void brightenEdges(bool onOff)
+    private void highlightNodeAndEdges()
     {
-        m_renderer.material.color = onOff ? Color.yellow : m_startcolor;
+        // highlight the node
+        m_renderer.material.color = m_treeNode.mClicked ? Color.yellow : m_startcolor;
 
-        if (m_statsElem.mNodeInstance == null)
-            return;
+        if (m_treeNode.mNodeInstance == null)
+            return;  // mNodeInstance only set if it's a leaf in the tree
 
-        Color c1 = onOff ? Color.yellow : m_edgeManager.m_lineColor;
-
-        foreach (EdgeInstance edge in m_statsElem.mNodeInstance.m_childEdges)
+        foreach (EdgeInstance edge in m_treeNode.mNodeInstance.m_childEdges)
         {
+            Color c1 = (m_treeNode.mClicked || edge.mChildNode.m_treeNode.mClicked)
+                ? Color.yellow : m_edgeManager.m_lineColor;
             LineRenderer lr = edge.mGoEdge.GetComponent<LineRenderer>();
             lr.SetColors(c1, c1);
         }
-        foreach (EdgeInstance edge in m_statsElem.mNodeInstance.m_parentEdges)
+
+        foreach (EdgeInstance edge in m_treeNode.mNodeInstance.m_parentEdges)
         {
+            Color c1 = (m_treeNode.mClicked || edge.mParentNode.m_treeNode.mClicked)
+                ? Color.yellow : m_edgeManager.m_lineColor;
             LineRenderer lr = edge.mGoEdge.GetComponent<LineRenderer>();
             lr.SetColors(c1, c1);
         }

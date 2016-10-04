@@ -19,6 +19,7 @@ public class OwlTreeNode
     public float mAlpha { set; get; }       // radial start for this node
     public float mRange { set; get; }       // radial range for this node
     public int mKidNum;                     // child number of this node
+    public bool mClicked { set; get; }      // has the node been clicked?
 
     public OwlTreeNode()
     {
@@ -31,6 +32,7 @@ public class OwlTreeNode
         mKidNum = 0;
         mRange = 0;
         mAlpha = 0;
+        mClicked = false;
     }
 
     public OwlTreeNode(string spotName, int depth, int kidCnt) : this()

@@ -4,18 +4,18 @@ using UnityEngine;
 
 public class EdgeInstance
 {
-    private NodeInstance mChildNode;
+    public NodeInstance mChildNode;
+    public NodeInstance mParentNode;
     public GameObject mGoEdge;
-    private IOwlEdge mOwlEdge;
-    private NodeInstance mParentNode;
+    //private IOwlEdge mOwlEdge;
 
-    public EdgeInstance(IOwlEdge edge, NodeInstance childNode, 
+    public EdgeInstance(/*IOwlEdge edge,*/ NodeInstance childNode, 
         NodeInstance parentNode, GameObject goEdge)
     {
         mChildNode = childNode;
         mParentNode = parentNode;
         mGoEdge = goEdge;
-        mOwlEdge = edge;
+        //mOwlEdge = edge;
 
         childNode.addParentEdge(this);
         parentNode.addChildEdge(this);

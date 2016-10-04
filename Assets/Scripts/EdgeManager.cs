@@ -53,7 +53,7 @@ public class EdgeManager : MonoBehaviour
 
         GameObject goEdge = DrawLine(childPos, parentPos, m_lineColor, m_OwlLineParent);
 
-        EdgeInstance myEdge = new EdgeInstance(edge, childNode, parentNode, goEdge);
+        /*EdgeInstance myEdge =*/ new EdgeInstance(/*edge,*/ childNode, parentNode, goEdge);
     }
 
 
