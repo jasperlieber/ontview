@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
+// Class to hold an OWL tree of nodes based on URI of node.
+
 public class OwlTree 
 {
     public TreeNode<OwlTreeNode> m_tree;

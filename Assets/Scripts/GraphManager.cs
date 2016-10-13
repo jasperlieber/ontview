@@ -10,8 +10,13 @@ using Overby.Collections;
 using UnityEditor;
 #endif
 
+/**
+ * Main entry point to FTL Owl Visualizer
+ */
 public class GraphManager : MonoBehaviour
 {
+    private static string m_versionTxt = "FTL Owl Visualizer -- Oct 13, 2016\n\n";
+
     public static bool m_debug = false;
 
     public string m_OwlFile;
@@ -52,7 +57,7 @@ public class GraphManager : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        m_winText.text = "FTL Owl Visualizer 2016-Oct-04\n\n";
+        m_winText.text = m_versionTxt;
         m_titleText.text = "";
 
         m_heirTransform = GameObject.Find("HeirLineParent").transform;
@@ -62,8 +67,6 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator GameLoop()
     {
-        //m_EdgeManager = GameObject.Find("EdgeManager");
-
         m_NodeDictionary = new Dictionary<string, NodeInstance>();
 
         m_owlNodeTree = new OwlNodeTree();
@@ -75,12 +78,6 @@ public class GraphManager : MonoBehaviour
         yield return StartCoroutine(ProcessOwl());
         m_winText.text = oldText;
 
-        //string msg = m_owlNodeTree.ToString();
-        //Debug.Log(msg);
-
-        //m_drawCnt = 0;
-
-        /*yield return StartCoroutine*/
         DrawOwlTree(m_owlNodeTree.m_keyTree.m_tree);
 
         if (m_testing)
@@ -92,9 +89,7 @@ public class GraphManager : MonoBehaviour
 
     private IEnumerator OpenOwl()
     {
-        string filename = m_OwlFile;//   Application.dataPath.ToString() 
-            //+ "\\..\\Ontologies\\example.owl";
-        //Debug.Log(filename);
+        string filename = m_OwlFile;
         IOwlParser parser = new OwlXmlParser();
         m_OwlGraph = parser.ParseOwl(filename);
         m_numNodes = m_OwlGraph.Nodes.Count;
@@ -103,20 +98,19 @@ public class GraphManager : MonoBehaviour
 
         string oldText = m_winText.text;
 
-
-        //yield return null;
-
         IDictionaryEnumerator nodeIter = (IDictionaryEnumerator)m_OwlGraph.Nodes.GetEnumerator();
 
         int cnt = 0;
 
         while (nodeIter.MoveNext())
         {
-            cnt++;
-
             //string owlKey = (nodeIter.Key).ToString();
             string owlKey = ((OwlNode)nodeIter.Value).ID;
             OwlNode owlNode = (OwlNode)nodeIter.Value;
+            if (owlNode.IsAnonymous())
+                continue;
+
+            cnt++;
 
             NodeInstance graphNode = new NodeInstance();
 
@@ -181,6 +175,9 @@ public class GraphManager : MonoBehaviour
     public static void MyQuit()
     {
         //Debug.Log("MyQuit() called.");
+
+        // found following "quit" technique on unity site
+
 #if UNITY_EDITOR
         //EditorApplication.ExecuteMenuItem("Edit/Play");
         UnityEditor.EditorApplication.isPlaying = false;
@@ -218,34 +215,15 @@ public class GraphManager : MonoBehaviour
             m_EdgeManager.DrawTaxonomyLine(treeNode.Value.mPos, treeNode.Parent.Value.mPos);
         }
 
-        //m_drawCnt++;
-
-        //if (m_drawCnt % m_addElementInterval == 0)
-        //{
-        //    //Debug.Log("cnt = " + cnt);
-        //    if (m_testing)
-        //        yield break;
-        //    else
-        //        yield return null; // StartCoroutine(DrawStatTree(kid));
-        //}
-
         foreach (var kid in treeNode.Children)
         {
             DrawOwlTree(kid);
-
-            //else
-            //    yield return DrawStatTree(kid);
         }
-
-
-        //yield return null;
     }
 
 
     private IEnumerator DrawOwlEdges()
     {
-        //yield return null;
-
         int numEdges = m_OwlGraph.Edges.Count;
 
         m_winText.text += "There are " + numEdges + " edges(s).";
@@ -261,22 +239,17 @@ public class GraphManager : MonoBehaviour
 
             m_EdgeManager.addOwlEdge(edge, cnt, ref numNull);
 
-            //EdgeInstance edgeInstance = new EdgeInstance(edge);
-
-
             if (cnt++ % m_addElementInterval == 0)
             {
                 //Debug.Log("cnt = " + cnt);
-                yield return null;// new WaitForSeconds(m_edgeAddDelaySecs);
+
+                // can slow down drawing with call to WaitForSeconds
+                // yield return new WaitForSeconds(m_edgeAddDelaySecs);
+
+                yield return null;
             }
         }
 
-
-
-        //m_winText.text += "\n" + numNull + " edge(s) have a null node.";
-
         yield return null;
     }
-
-
 }

@@ -4,6 +4,8 @@ using OwlDotNetApi;
 using UnityEngine.UI;
 using System;
 
+// MonoBehavior for displaying OWL nodes
+
 public class NodeManager : MonoBehaviour
 {
     //public GUIStyle m_style;
@@ -30,18 +32,12 @@ public class NodeManager : MonoBehaviour
     void Start()
     {
 
-        //Debug.Log(m_yLabelOffset);
-        
-        //Debug.Log("m_statsElem.ToString() = " + m_statsElem.ToString());
-
-        //m_nodeLabelGO = Instantiate(m_NodeLabelPrefab, 
-        //        Vector3.zero,
-        //        Quaternion.identity)
-        //    as GameObject;
-
-
         m_nodeLabel = GetComponentInChildren<Text>();
-        m_nodeLabel.text = m_treeNode.ToString(); //"test";// m_owlNode.ToString();
+        m_nodeLabel.text = m_treeNode.ToString();
+
+        //m_nodeLabel.text = m_treeNode.mNodeInstance == null 
+        //    ? m_treeNode.ToString()
+        //    : m_treeNode.mNodeInstance.m_owlNode.ID; //"test";// m_owlNode.ToString();
 
         m_nodeLabel.transform.SetParent(GameObject.Find("Canvas").transform);
 
@@ -59,8 +55,6 @@ public class NodeManager : MonoBehaviour
 
         m_startcolor = m_renderer.material.color;
 
-
-
         //Debug.Log("tt text = " + m_nodeLabel.text + ", startColor = " + 
         //    m_startcolor + ", pos = " + m_renderer.bounds.center.ToString());
     }
@@ -68,7 +62,7 @@ public class NodeManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        // look for click
         if (m_showLabel && Input.GetMouseButtonDown(0))
         {
             m_treeNode.mClicked = !m_treeNode.mClicked;
@@ -84,13 +78,16 @@ public class NodeManager : MonoBehaviour
 
     void OnMouseEnter()
     {
-        //brightenEdges(true);
+        // highlight the node
+        m_renderer.material.color = Color.yellow;
+
         m_showLabel = true;
     }
     void OnMouseExit()
     {
-        //brightenEdges(false);
-        //m_renderer.material.color = m_startcolor;
+        // unhighlight the node, unless it's be clicked
+        m_renderer.material.color = m_treeNode.mClicked ? Color.yellow : m_startcolor;
+
         m_showLabel = false;
     }
 
@@ -101,21 +98,21 @@ public class NodeManager : MonoBehaviour
         //m_nodeLabelGO.SetActive(m_showLabel);
         if (m_showLabel)
         {
-
+            // The following can be used to position the label just to
+            // the right of a node.  There's disadvantages of this (text can easily go 
+            // off screen.)
             //Rect rr = GUIRectWithObject(m_renderer.bounds);
-
             //Debug.Log(rr);
-
             //Vector3 pixelPos = new Vector3(); rr.x + rr.width + 155,
             //    rr.center.y, 0);
-
-            Vector3 pixelPos = Vector3.zero;// new Vector3();
-            pixelPos.x = 160;
-            pixelPos.y = 70;
 
             //Vector3 pixelPos = Camera.main.WorldToScreenPoint(transform.position);
             //Debug.Log(pixelPos.ToString());
 
+            // position the label text directly
+            Vector3 pixelPos = Vector3.zero;// new Vector3();
+            pixelPos.x = 160;
+            pixelPos.y = 70;
 
             m_nodeLabel.rectTransform.position = pixelPos;
             //new Vector3(
@@ -125,9 +122,6 @@ public class NodeManager : MonoBehaviour
 
     private void highlightNodeAndEdges()
     {
-        // highlight the node
-        m_renderer.material.color = m_treeNode.mClicked ? Color.yellow : m_startcolor;
-
         if (m_treeNode.mNodeInstance == null)
             return;  // mNodeInstance only set if it's a leaf in the tree
 

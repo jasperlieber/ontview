@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using OwlDotNetApi;
 using System;
 
+// Class for drawing instances of edges
+
 public class EdgeManager : MonoBehaviour
 {
     public float m_lineSize;
@@ -36,14 +38,14 @@ public class EdgeManager : MonoBehaviour
 
         if (childNode == null || parentNode == null)
         {
-            if (childNode == null)
-            {
-                //Debug.Log("no child node found for edge " + edge.ID);
-            }
-            if (parentNode == null)
-            {
-                //Debug.Log("no parent node found for edge " + edge.ID);
-            }
+            //if (childNode == null)
+            //{
+            //    //Debug.Log("no child node found for edge " + edge.ID);
+            //}
+            //if (parentNode == null)
+            //{
+            //    //Debug.Log("no parent node found for edge " + edge.ID);
+            //}
             numNull++;
             return;
         }
@@ -79,9 +81,6 @@ public class EdgeManager : MonoBehaviour
         lr.SetPosition(1, end);
 
         return myLine;
-
-        //GameObject.Destroy(myLine, duration);
-
     }
 
     internal void setNodeDictionary(Dictionary<string, NodeInstance> nodeDictionary)

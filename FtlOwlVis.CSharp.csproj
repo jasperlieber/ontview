@@ -78,6 +78,7 @@
     <Compile Include="Assets\Scripts\TreeNode.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Ontologies\bfo2.owl.txt" />
     <None Include="Assets\Ontologies\catalog-v001.xml" />
     <None Include="Assets\Ontologies\foaf.owl.xml" />
     <None Include="Assets\Prefabs\sky5X\README.txt" />

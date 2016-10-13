@@ -2,6 +2,9 @@
 using OwlDotNetApi;
 using UnityEngine;
 
+
+// Class to hold edge data, namely the parent & child nodes, and a
+// reference to the game object holding the edge.
 public class EdgeInstance
 {
     public NodeInstance mChildNode;

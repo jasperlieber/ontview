@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-
+// Class to hold an OWL node
 public class OwlTreeNode
 {
     private readonly string mSpotName;      // name of spot in tree

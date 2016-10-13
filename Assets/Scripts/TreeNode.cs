@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
+// Generic class for Trees
+
 namespace Overby.Collections
 {
     public class TreeNode<T>

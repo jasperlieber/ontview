@@ -29,6 +29,10 @@ public class OwlNodeTree
         m_keyTree.UpdateLeafCount(m_keyTree.m_tree);
     }
 
+    // By range, I mean how much of the interval of [0,1] this
+    // node should be allocated for its number of children & depth in a tree.
+    // This range is then converted to an angle of a circle for the
+    // circular display of the graph.
     internal void CalculateNodeRanges(TreeNode<OwlTreeNode> treePtr)
     {
         treePtr.Value.mRange = treePtr.Value.mDepth == 0 ? 1 
@@ -41,6 +45,9 @@ public class OwlNodeTree
         }
     }
 
+    // By alpha, I mean where in the range of [0,1] should this node
+    // be positioned based its "range" (see above) and the position of
+    // its parent.
     internal void CalculateNodeAlphas(TreeNode<OwlTreeNode> treePtr)
     {
         //float mRadialIncrement = 5;
@@ -55,7 +62,6 @@ public class OwlNodeTree
 
             //Debug.Log(child.Value.mDepth);
             //float minRangeAtThisDepth = mDepthMinRange[child.Value.mDepth];
-
 
             float radius = mDepthRadii[child.Value.mDepth];// 1f / (2f * (float)Math.PI * minRangeAtThisDepth * 1.1f) * child.Value.mDepth;// * mRadialIncrement;
 
@@ -74,6 +80,11 @@ public class OwlNodeTree
             CalculateNodeAlphas(child);
         }
     }
+
+
+    // Nodes are put in circles of various radii.  Which circle is based on the 
+    // depth of the node in its taxonomy.  The radii of the circle is based on 
+    // how many nodes exist at that level, with some fudging for max values.
 
     //public List<int> mDepthCounts;
     private List<float> mDepthMinRange;
@@ -105,8 +116,6 @@ public class OwlNodeTree
 
             prevRadius = selectedRadius + 3;
 
-
-
             mDepthRadii.Add(selectedRadius);
 
         }
@@ -115,11 +124,7 @@ public class OwlNodeTree
         //foreach (float ff in mDepthRadii)
         //    vals += ff + " ";
         //Debug.Log(vals);// String.Join(" ", mDepthCounts));
-
-
         //Debug.Break();
-
-
     }
 
     private void GetMinRangesOfKids(int curDepth, TreeNode<OwlTreeNode> treeNode)
