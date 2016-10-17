@@ -101,6 +101,8 @@ public class NodeManager : MonoBehaviour
             // The following can be used to position the label just to
             // the right of a node.  There's disadvantages of this (text can easily go 
             // off screen.)
+
+            // Get bounds of object in renderer space
             //Rect rr = GUIRectWithObject(m_renderer.bounds);
             //Debug.Log(rr);
             //Vector3 pixelPos = new Vector3(); rr.x + rr.width + 155,
